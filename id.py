@@ -18,7 +18,7 @@ r = tensegrity_rod_length * (np.array([
 def pred(v_prior: np.array,                       # Pre-collision velocity
          omega_prior: np.array,                   # Pre-collision angular velocity
          R: Rotation,                             # Pre-collision attitude
-         contact_state: list[bool],                  # Contact State
+         contact_state: list[bool],               # Contact State
          e: float,                                # Coefficient of restitution
          mu: float,                               # Friction coefficient
          n = np.array([0, -1, 0], dtype=float),   # Wall normal
@@ -82,7 +82,7 @@ def run_sys_id(v_prior_meas, omega_prior_meas,
                contact_state):
     
     # Define Cost Function
-    def f(x, w_v = 1, w_omega = 1.0):
+    def f(x, w_v = 1.0, w_omega = 1.0):
         n = len(contact_state)
         e = x[0]
         mu = x[1]
@@ -104,22 +104,22 @@ def run_sys_id(v_prior_meas, omega_prior_meas,
     const = LinearConstraint(A=np.eye(2), lb=np.zeros(2))
     res = minimize(fun=f, x0=[0.5, 0.5], constraints=(const,))
 
-    print(res)
+    return res
 
 
 def dummyData():
-    n = 1000
+    n = 20
 
-    sigma_v = 0.1
-    sigma_omega = 0.1
+    sigma_v = 0.25
+    sigma_omega = 0.5
     sigma_R = np.deg2rad(1)
 
     e_true = 0.8
     mu_true = 0.1
 
-    v_prior = np.concatenate([np.zeros([1, n]), 
-                            [np.linspace(start=0.1, stop=5, num=n)],
-                            np.zeros([1, n])], axis=0)
+    v_prior = np.concatenate([[np.linspace(start=0.1, stop=1, num=n)],
+                              [np.linspace(start=0.1, stop=5, num=n)],
+                               np.zeros([1, n])], axis=0)
     v_prior_noisy = v_prior + np.random.normal(0.0, sigma_v, size=(3, n))
 
     omega_prior = np.zeros([3, n])
@@ -168,7 +168,8 @@ def dummyData():
     axs[1].legend()
     fig.tight_layout()
 
-    plt.show()
+    if False:
+        plt.show()
 
     return (v_prior_noisy, omega_prior_noisy,
             v_post_noisy, omega_post_noisy,
@@ -177,10 +178,12 @@ def dummyData():
 
 
 def run_sys_id_w_dummy_data():
-    run_sys_id(*dummyData())
+    return run_sys_id(*dummyData())
 
 def main():
-    run_sys_id_w_dummy_data()
+    res = run_sys_id_w_dummy_data()
+    print(res)
+    print(f"Error: {np.abs(res.x - [0.8, 0.1]) / np.array([0.8, 0.1])}%")
 
 if __name__ == "__main__":
     main()
