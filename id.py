@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation
 from scipy.optimize import minimize, LinearConstraint
 
+from rosbags2optidata import getData
+
 tensegrity_rod_length = 0.22 # [m]
 r = tensegrity_rod_length * (np.array([
    [1.00, 0.50, 0.25],
@@ -82,7 +84,7 @@ def run_sys_id(v_prior_meas, omega_prior_meas,
                contact_state):
     
     # Define Cost Function
-    def f(x, w_v = 1.0, w_omega = 1.0):
+    def f(x, w_v = 1.0, w_omega = 0.0):
         n = len(contact_state)
         e = x[0]
         mu = x[1]
@@ -90,8 +92,8 @@ def run_sys_id(v_prior_meas, omega_prior_meas,
         omega_pred = np.zeros_like(omega_prior_meas)
         for i in range(n):
         # True post collision vel
-            v_pred[:, i], omega_pred[:, i] = pred(v_prior_meas[:, i],
-                                                omega_prior_meas[:, i],
+            v_pred[i, :], omega_pred[i, :] = pred(v_prior_meas[i, :],
+                                                omega_prior_meas[i, :],
                                                 orientations_prior_meas[i],
                                                 contact_state[i],
                                                 e=e, mu=mu)
@@ -180,8 +182,12 @@ def dummyData():
 def run_sys_id_w_dummy_data():
     return run_sys_id(*dummyData())
 
+def run_sys_id_w_data():
+    return run_sys_id(*getData())
+
 def main():
-    res = run_sys_id_w_dummy_data()
+    #res = run_sys_id_w_dummy_data()
+    res = run_sys_id_w_data()
     print(res)
     print(f"Error: {np.abs(res.x - [0.8, 0.1]) / np.array([0.8, 0.1])}%")
 
