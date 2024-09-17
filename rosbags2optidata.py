@@ -154,7 +154,9 @@ def rosbag2data(path: str, plot: bool):
             if connection.topic == '/telemetry25':
                 msg = typestore.deserialize_ros1(rawdata, connection.msgtype)
                 t_contact += [float(msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec)]
-                contact += [[bool(msg.customPacket1[0] & (0b00000001 << i)) for i in range(8)]]  
+                contact += [[bool((msg.customPacket1[0] >> i) & 0b1) if i < 8
+                             else  bool((msg.customPacket1[1] >> (i-8)) & 0b1)
+                             for i in range(16)]]
 
                 t_motorForces += [float(msg.header.stamp.sec + 1e-9 * msg.header.stamp.nanosec)]
                 motorForces += [[msg.motorForces[0], msg.motorForces[1],
